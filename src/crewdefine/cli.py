@@ -58,13 +58,13 @@ class ConsoleIO:
     def ask(self, question: str, options: list[str] | None, allow_skip: bool) -> str:
         self._render_question(question)
         if options:
-            table = Table(show_header=False, box=None, pad_edge=False)
+            table = Table(show_header=False, box=None, pad_edge=False, padding=(0, 1))
             for i, opt in enumerate(options, 1):
-                table.add_row(f"[dim]{i}.[/dim]", opt)
+                table.add_row(f"[bold cyan]{i}[/bold cyan][dim].[/dim]", opt)
             console.print(table)
-            hint = "Enter a number or type your own answer"
+            hint = "[bold cyan]›[/bold cyan] [cyan]Enter a number or type your own answer[/cyan]"
             if allow_skip:
-                hint += " (blank to skip)"
+                hint += " [dim](blank to skip)[/dim]"
             raw = Prompt.ask(hint, default="" if allow_skip else None)
             raw = (raw or "").strip()
             if raw.isdigit():
@@ -73,7 +73,9 @@ class ConsoleIO:
                     return options[idx]
             return raw or "(skipped)"
 
-        hint = "Your answer" + (" (blank to skip)" if allow_skip else "")
+        hint = "[bold cyan]›[/bold cyan] [cyan]Your answer[/cyan]"
+        if allow_skip:
+            hint += " [dim](blank to skip)[/dim]"
         raw = Prompt.ask(hint, default="" if allow_skip else None)
         return (raw or "").strip() or "(skipped)"
 
@@ -83,13 +85,14 @@ class ConsoleIO:
         fences, and bullet lists display properly. The LLM legitimately uses
         these — e.g. a roster summary before finalizing — and raw markdown
         syntax in a plain Panel is unreadable."""
+        console.print()  # leading blank line so successive questions don't stack visually
         console.print(Panel(Markdown(question), border_style="cyan", padding=(0, 1)))
 
     def info(self, message: str) -> None:
-        console.print(f"[dim]{message}[/dim]")
+        console.print(f"[italic dim]{message}[/italic dim]")
 
     def warn(self, message: str) -> None:
-        console.print(f"[yellow]! {message}[/yellow]")
+        console.print(f"[bold yellow]![/bold yellow] [yellow]{message}[/yellow]")
 
 
 # ---------------------------------------------------------------------------
@@ -128,9 +131,11 @@ def cmd_new(
     )
     console.print(
         Panel.fit(
-            f"[bold]CrewDefine[/bold] v{__version__} — starting a new crew.\n"
-            f"Model: [cyan]{settings.model}[/cyan]  •  Max turns: {settings.max_turns}",
+            f"[bold cyan]CrewDefine[/bold cyan] [dim]v{__version__}[/dim] — starting a new crew.\n"
+            f"[dim]Model:[/dim] [cyan]{settings.model}[/cyan]  [dim]•[/dim]  "
+            f"[dim]Max turns:[/dim] [cyan]{settings.max_turns}[/cyan]",
             border_style="cyan",
+            padding=(0, 1),
         )
     )
 
@@ -278,19 +283,36 @@ def _validate_and_write(crew: CrewConfig, out_root: Path, *, overwrite: bool) ->
     report = validate_crew(crew)
     if report.warnings:
         for w in report.warnings:
-            console.print(f"[yellow]warn:[/yellow] {w}")
+            console.print(f"[bold yellow]![/bold yellow] [yellow]{w}[/yellow]")
     try:
         report.raise_if_failed()
     except ValidationError as e:
-        console.print("[red]Validation failed. Not writing any files.[/red]")
-        for err in e.errors:
-            console.print(f"  [red]-[/red] {err}")
+        body = "\n".join(f"[red]•[/red] {err}" for err in e.errors)
+        console.print(
+            Panel(
+                body,
+                title="[bold red]Validation failed — not writing any files[/bold red]",
+                border_style="red",
+                padding=(0, 1),
+            )
+        )
         raise typer.Exit(1) from e
 
     out_root.mkdir(parents=True, exist_ok=True)
     result = write_crew(crew, out_root, overwrite=overwrite)
-    console.print(f"[green]Wrote crew to {result.crew_dir}[/green]")
-    console.print(f"  {len(result.agent_files)} agent YAMLs, {len(result.tool_files)} tool stubs")
+    body = (
+        f"[bold]{len(result.agent_files)}[/bold] agent YAMLs"
+        f"  •  [bold]{len(result.tool_files)}[/bold] tool stubs\n"
+        f"[dim]Path:[/dim] {result.crew_dir}"
+    )
+    console.print(
+        Panel(
+            body,
+            title="[bold green]✓ Crew written[/bold green]",
+            border_style="green",
+            padding=(0, 1),
+        )
+    )
 
 
 def _load_crew_from_dir(crew_dir: Path) -> CrewConfig:

@@ -73,7 +73,8 @@ ignore = ["E501"] # handled by formatter
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B008"]
 # Typer's idiomatic declaration uses `typer.Option(...)` / `typer.Argument(...)` in defaults.
-"src/crewdefine/cli.py" = ["B008"]
+# Also: the CLI uses `›` (single right-pointing angle quote) as a prompt glyph — intentional typography.
+"src/crewdefine/cli.py" = ["B008", "RUF001"]
 # Agent-facing prompts are Unicode text; typography is intentional.
 "src/crewdefine/prompts/*.py" = ["RUF001"]
 
