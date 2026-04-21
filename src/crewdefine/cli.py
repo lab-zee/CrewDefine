@@ -15,6 +15,7 @@ from pathlib import Path
 import typer
 import yaml
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.table import Table
@@ -55,11 +56,11 @@ class ConsoleIO:
     """Rich-backed UserIO used by the interview loop."""
 
     def ask(self, question: str, options: list[str] | None, allow_skip: bool) -> str:
+        self._render_question(question)
         if options:
             table = Table(show_header=False, box=None, pad_edge=False)
             for i, opt in enumerate(options, 1):
                 table.add_row(f"[dim]{i}.[/dim]", opt)
-            console.print(Panel.fit(f"[bold]{question}[/bold]"))
             console.print(table)
             hint = "Enter a number or type your own answer"
             if allow_skip:
@@ -72,10 +73,17 @@ class ConsoleIO:
                     return options[idx]
             return raw or "(skipped)"
 
-        console.print(Panel.fit(f"[bold]{question}[/bold]"))
         hint = "Your answer" + (" (blank to skip)" if allow_skip else "")
         raw = Prompt.ask(hint, default="" if allow_skip else None)
         return (raw or "").strip() or "(skipped)"
+
+    @staticmethod
+    def _render_question(question: str) -> None:
+        """Render the question as Markdown so embedded tables, bold, code
+        fences, and bullet lists display properly. The LLM legitimately uses
+        these — e.g. a roster summary before finalizing — and raw markdown
+        syntax in a plain Panel is unreadable."""
+        console.print(Panel(Markdown(question), border_style="cyan", padding=(0, 1)))
 
     def info(self, message: str) -> None:
         console.print(f"[dim]{message}[/dim]")
