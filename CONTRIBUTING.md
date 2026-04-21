@@ -5,7 +5,7 @@ Thanks for your interest. CrewDefine is a small, focused tool — contributions 
 ## Development setup
 
 ```bash
-git clone https://github.com/davidinwald/CrewDefine
+git clone https://github.com/lab-zee/CrewDefine
 cd CrewDefine
 python -m venv .venv
 source .venv/bin/activate

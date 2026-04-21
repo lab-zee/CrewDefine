@@ -17,7 +17,7 @@ pip install crewdefine
 Or from source:
 
 ```bash
-git clone https://github.com/davidinwald/CrewDefine
+git clone https://github.com/lab-zee/CrewDefine
 cd CrewDefine
 pip install -e ".[dev]"
 ```

@@ -45,9 +45,9 @@ dev = [
 crewdefine = "crewdefine.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/davidinwald/CrewDefine"
-Issues = "https://github.com/davidinwald/CrewDefine/issues"
-Source = "https://github.com/davidinwald/CrewDefine"
+Homepage = "https://github.com/lab-zee/CrewDefine"
+Issues = "https://github.com/lab-zee/CrewDefine/issues"
+Source = "https://github.com/lab-zee/CrewDefine"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/crewdefine"]
