@@ -1,0 +1,91 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "crewdefine"
+version = "0.1.0"
+description = "Interactive CLI that helps you author LabZ agent crews as YAML."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "David Inwald" }]
+keywords = ["labz", "agents", "llm", "anthropic", "yaml", "crewai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Code Generators",
+]
+dependencies = [
+    "anthropic>=0.40.0",
+    "pydantic>=2.6",
+    "pyyaml>=6.0",
+    "typer>=0.12",
+    "rich>=13.7",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "types-PyYAML>=6.0",
+]
+
+[project.scripts]
+crewdefine = "crewdefine.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/davidinwald/CrewDefine"
+Issues = "https://github.com/davidinwald/CrewDefine/issues"
+Source = "https://github.com/davidinwald/CrewDefine"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/crewdefine"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific
+]
+ignore = ["E501"] # handled by formatter
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B008"]
+# Typer's idiomatic declaration uses `typer.Option(...)` / `typer.Argument(...)` in defaults.
+"src/crewdefine/cli.py" = ["B008"]
+# Agent-facing prompts are Unicode text; typography is intentional.
+"src/crewdefine/prompts/*.py" = ["RUF001"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src/crewdefine"]
