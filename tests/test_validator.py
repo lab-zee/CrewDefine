@@ -61,25 +61,28 @@ def test_unused_custom_tool_warns() -> None:
     assert any("orphan_tool" in w for w in report.warnings)
 
 
-def test_delegation_cycle_detected() -> None:
-    a = AgentConfig(
-        id="a",
-        name="A",
-        role="A who delegates to B",
+def test_back_delegation_is_allowed() -> None:
+    """LabZ's director ↔ specialist pattern creates graph cycles by design
+    (director delegates down, specialists delegate back to director). The
+    validator must accept this; runtime depth limits handle actual runaway
+    loops."""
+    director = AgentConfig(
+        id="director",
+        name="Director",
+        role="Director who orchestrates specialists",
         system_prompt="a" * 100,
-        can_delegate_to=["b"],
+        can_delegate_to=["specialist"],
     )
-    b = AgentConfig(
-        id="b",
-        name="B",
-        role="B who delegates back to A",
+    specialist = AgentConfig(
+        id="specialist",
+        name="Specialist",
+        role="Specialist who returns findings to the director",
         system_prompt="a" * 100,
-        can_delegate_to=["a"],
+        can_delegate_to=["director"],
     )
-    crew = CrewConfig(name="cycle-crew", description="x", agents=[a, b])
+    crew = CrewConfig(name="hub-crew", description="x", agents=[director, specialist])
     report = validate_crew(crew)
-    assert not report.ok
-    assert any("cycle" in e.lower() for e in report.errors)
+    assert report.ok, report.errors
 
 
 def test_round_trip_produces_stable_yaml(basic_crew: CrewConfig) -> None:

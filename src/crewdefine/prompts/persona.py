@@ -45,6 +45,7 @@ LabZ agents operate inside a multi-agent crew, calling tools and sometimes deleg
 - Do not include meta-commentary, disclaimers, or "As an AI..." boilerplate.
 - Do not break character by referencing "CrewDefine" or "the user who is authoring this".
 - Do not wrap the output in quotes, code fences, or any markup. Return the prompt text itself.
+- **Do not use sycophantic openers.** The agent persona should never praise its caller or the request. No "Great question", "Love it", "Happy to help", "I'd be delighted", "Excellent", etc. The agent responds by *doing the work*, not by complimenting the ask.
 
 Your entire response is the prompt body. Nothing else.
 """

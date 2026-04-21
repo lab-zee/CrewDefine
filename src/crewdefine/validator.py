@@ -1,9 +1,12 @@
 """Validation for both in-memory `CrewConfig`s and on-disk crew directories.
 
 Three layers:
-1. Pydantic field validation (handled by `schema.py`).
-2. Cross-agent checks: delegation targets exist, tool references resolve,
-   graph has no cycles.
+1. Pydantic field validation (handled by `schema.py`, incl. self-delegation).
+2. Cross-agent checks: delegation targets exist, tool references resolve.
+   Note: cycles in the delegation graph are legitimate in LabZ — the
+   director ↔ specialist hub-and-spoke pattern creates them by design, and
+   LabZ's runtime handles actual runaway loops via depth limits. We do NOT
+   reject cycles here.
 3. Round-trip: dump each agent to YAML, `yaml.safe_load` it back, and confirm
    the dict matches what LabZ's `AgentConfig` dataclass expects field-for-field.
 """
@@ -72,7 +75,6 @@ def validate_crew(crew: CrewConfig) -> ValidationReport:
         _check_delegation_targets(agent, agent_ids, report)
         _check_round_trip(agent, report)
 
-    _check_no_delegation_cycles(crew.agents, report)
     _check_custom_tools_used(crew.custom_tools, crew.agents, report)
     return report
 
@@ -119,7 +121,6 @@ def validate_crew_dir(crew_dir: Path) -> ValidationReport:
                 )
         _check_delegation_targets(agent, agent_ids, report)
 
-    _check_no_delegation_cycles(loaded, report)
     return report
 
 
@@ -140,34 +141,6 @@ def _check_delegation_targets(
             report.errors.append(
                 f"{agent.id}: can_delegate_to includes {target!r}, which is not a defined agent id."
             )
-
-
-def _check_no_delegation_cycles(agents: list[AgentConfig], report: ValidationReport) -> None:
-    graph = {a.id: list(a.can_delegate_to) for a in agents}
-    WHITE, GRAY, BLACK = 0, 1, 2
-    color = {node: WHITE for node in graph}
-
-    def dfs(node: str, path: list[str]) -> None:
-        color[node] = GRAY
-        path.append(node)
-        for nxt in graph.get(node, []):
-            if nxt not in color:
-                continue
-            if color[nxt] == GRAY:
-                cycle = [*path[path.index(nxt) :], nxt]
-                report.errors.append(
-                    f"Delegation cycle detected: {' -> '.join(cycle)}. "
-                    "LabZ prevents runaway loops via depth limits, but cycles in config are still rejected."
-                )
-                return
-            if color[nxt] == WHITE:
-                dfs(nxt, path)
-        path.pop()
-        color[node] = BLACK
-
-    for node in list(color):
-        if color[node] == WHITE:
-            dfs(node, [])
 
 
 def _check_round_trip(agent: AgentConfig, report: ValidationReport) -> None:
