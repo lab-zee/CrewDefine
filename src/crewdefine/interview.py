@@ -184,9 +184,33 @@ def _handle_tool_use(block: dict[str, Any], state: _InterviewState, io: UserIO) 
             return _record_custom_tool(raw_input, tool_use_id, state)
 
         if name == "finalize_crew":
-            state.finalized = True
-            state.finalize_note = str(raw_input.get("confirmation_note", "")).strip()
-            return _tool_result(tool_use_id, "Finalized. Drafting personas next.")
+            note = str(raw_input.get("confirmation_note", "")).strip()
+            # If there's nothing to confirm, fall through to the empty-agents
+            # error path in run_interview rather than asking the user to
+            # confirm an empty roster.
+            if not state.agents:
+                state.finalized = True
+                state.finalize_note = note
+                return _tool_result(tool_use_id, "Finalized (empty). Drafting next.")
+
+            summary = _render_roster_summary(state, note)
+            answer = io.ask(
+                question=summary,
+                options=["Yes, finalize", "No, keep iterating"],
+                allow_skip=False,
+            )
+            if _is_finalize_affirmative(answer):
+                state.finalized = True
+                state.finalize_note = note
+                return _tool_result(tool_use_id, "User confirmed. Drafting personas next.")
+            return _tool_result(
+                tool_use_id,
+                (
+                    f"User did not confirm. Their reply: {answer!r}. "
+                    "Continue the interview — ask follow-up questions or update "
+                    "the roster, then call `finalize_crew` again when ready."
+                ),
+            )
 
         return _tool_result(tool_use_id, f"Unknown tool: {name!r}.", is_error=True)
     except Exception as e:
@@ -241,6 +265,54 @@ def _record_custom_tool(
     )
     state.custom_tools[tool.id] = tool
     return _tool_result(tool_use_id, f"Registered custom tool '{tool.id}'.")
+
+
+def _render_roster_summary(state: _InterviewState, note: str) -> str:
+    """Build a markdown roster summary for the pre-finalize confirmation.
+
+    Rendered directly to the user (the LLM is unreliable about including
+    the roster in its own `ask_user` text — see issue where users saw
+    "Does this look right?" with no roster above it)."""
+    lines: list[str] = []
+    lines.append(f"# Ready to finalize: **{state.crew_name or '(unnamed crew)'}**")
+    lines.append("")
+    if state.crew_description:
+        lines.append(state.crew_description)
+        lines.append("")
+    lines.append("## Agents")
+    lines.append("")
+    for agent in state.agents.values():
+        lines.append(f"### {agent['name']} `{agent['id']}`")
+        lines.append(f"- **Role:** {agent['role']}")
+        tools = agent.get("tools") or []
+        lines.append(
+            f"- **Tools:** {', '.join(f'`{t}`' for t in tools)}" if tools else "- **Tools:** _(none)_"
+        )
+        delegates = agent.get("can_delegate_to") or []
+        if delegates:
+            lines.append(f"- **Delegates to:** {', '.join(f'`{d}`' for d in delegates)}")
+        if agent.get("model"):
+            lines.append(f"- **Model:** `{agent['model']}`")
+        lines.append("")
+    if state.custom_tools:
+        lines.append("## Custom tools")
+        lines.append("")
+        for tool in state.custom_tools.values():
+            lines.append(f"- `{tool.id}` — {tool.description}")
+        lines.append("")
+    if note:
+        lines.append(f"_{note}_")
+        lines.append("")
+    return "\n".join(lines).rstrip()
+
+
+def _is_finalize_affirmative(answer: str) -> bool:
+    s = answer.strip().lower().rstrip(".!,? ")
+    if not s:
+        return False
+    if s.startswith("y"):
+        return True
+    return s in {"finalize", "lock it in", "ship it", "lgtm", "looks good", "ok", "okay", "1"}
 
 
 def _tool_result(tool_use_id: str, content: str, *, is_error: bool = False) -> dict[str, Any]:

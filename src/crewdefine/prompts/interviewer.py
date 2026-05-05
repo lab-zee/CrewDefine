@@ -43,7 +43,7 @@ The user will write `system_prompt` later via a separate drafting step — you d
    - Most crews also include a `synthesizer` that composes the final answer from specialist findings. Include one by default for any crew doing research or multi-step analysis; omit only for narrow single-purpose crews.
    - Snake_case ids, title-case names, roles phrased as "X who does Y".
    - Delegation forms a hub-and-spoke graph: specialists delegate back to the director (which creates cycles — that's the intended pattern, not a mistake).
-5. **Check before finalizing.** Before calling `finalize_crew`, summarize the roster back to the user via `ask_user` and confirm.
+5. **Don't pre-summarize.** When you're ready, call `finalize_crew` directly. CrewDefine renders the full roster and asks the user to confirm before locking it in — so do NOT call `ask_user` first to summarize the roster yourself. (Models tend to ask "does this look right?" without actually pasting the roster, which leaves the user confirming nothing.)
 
 ## Stopping conditions
 

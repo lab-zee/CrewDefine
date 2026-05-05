@@ -128,14 +128,18 @@ def test_happy_path_finalizes_with_two_agents() -> None:
         [{"type": "text", "text": persona_text}],
     ]
     llm = ScriptedLLM(script)
+    io = FakeIO(answers=["yes"])  # confirm the deterministic roster preview
     crew = run_interview(
         llm,  # type: ignore[arg-type]
         _settings(),
-        FakeIO(answers=[]),
+        io,
         seed_user_message="build a crew",
     )
     assert crew.name == "market-intel"
     assert {a.id for a in crew.agents} == {"director", "researcher"}
+    # The pre-finalize confirmation must include each agent's id in the
+    # rendered question — otherwise the user is confirming nothing.
+    assert any("director" in q and "researcher" in q for q in io.asked)
 
 
 def test_empty_interview_raises() -> None:
@@ -186,7 +190,7 @@ def test_text_only_turn_gets_nudged_back() -> None:
     crew = run_interview(
         llm,  # type: ignore[arg-type]
         _settings(),
-        FakeIO(answers=[]),
+        FakeIO(answers=["yes"]),
         seed_user_message="hi",
     )
     assert [a.id for a in crew.agents] == ["only"]
@@ -219,15 +223,82 @@ def test_ask_user_routes_to_io() -> None:
         ],
     ]
     llm = ScriptedLLM(script)
-    io = FakeIO(answers=["a thing for market stuff"])
+    io = FakeIO(answers=["a thing for market stuff", "yes"])
     crew = run_interview(
         llm,  # type: ignore[arg-type]
         _settings(),
         io,
         seed_user_message="hi",
     )
-    assert io.asked == ["What are we building?"]
+    # First ask: the LLM's own question. Second ask: the deterministic
+    # pre-finalize roster confirmation.
+    assert io.asked[0] == "What are we building?"
+    assert len(io.asked) == 2
+    assert "only" in io.asked[1]
     assert crew.name == "q-crew"
+
+
+def test_finalize_deny_keeps_interview_running() -> None:
+    """If the user rejects the pre-finalize confirmation, the interview
+    must continue rather than locking in the crew."""
+    script = [
+        [
+            _tool_use(
+                "record_crew_meta",
+                name="iter-crew",
+                description="A crew that gets revised mid-flight.",
+            ),
+            _tool_use(
+                "record_agent",
+                id="director",
+                name="Director",
+                role="Director who orchestrates",
+                tools=[],
+                can_delegate_to=[],
+            ),
+            _tool_use("finalize_crew", confirmation_note="first attempt"),
+        ],
+        # After deny, LLM adds another agent and tries finalize again.
+        [
+            _tool_use(
+                "record_agent",
+                id="researcher",
+                name="Researcher",
+                role="Researcher who looks things up",
+                tools=["web_search"],
+                can_delegate_to=["director"],
+            ),
+            _tool_use("finalize_crew", confirmation_note="second attempt"),
+        ],
+        [
+            {
+                "type": "text",
+                "text": (
+                    "You are Director. Your responsibilities: 1. **Orchestrate**. "
+                    "2. **Synthesize**. 3. **Cite sources**. Return findings to the caller."
+                ),
+            }
+        ],
+        [
+            {
+                "type": "text",
+                "text": (
+                    "You are Researcher. Your responsibilities: 1. **Search**. "
+                    "2. **Report**. 3. **Cite sources**. Return findings to the caller."
+                ),
+            }
+        ],
+    ]
+    llm = ScriptedLLM(script)
+    io = FakeIO(answers=["no, add a researcher", "yes"])
+    crew = run_interview(
+        llm,  # type: ignore[arg-type]
+        _settings(),
+        io,
+        seed_user_message="hi",
+    )
+    assert {a.id for a in crew.agents} == {"director", "researcher"}
+    assert len(io.asked) == 2  # one rejected confirmation, one accepted
 
 
 def test_unknown_tool_error_does_not_crash() -> None:
@@ -260,7 +331,7 @@ def test_unknown_tool_error_does_not_crash() -> None:
     crew = run_interview(
         llm,  # type: ignore[arg-type]
         _settings(),
-        FakeIO(answers=[]),
+        FakeIO(answers=["yes"]),
         seed_user_message="hi",
     )
     assert crew.name == "recovery"
