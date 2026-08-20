@@ -30,7 +30,14 @@ from crewdefine.prompts import (
     PERSONA_SYSTEM_PROMPT,
     persona_user_prompt,
 )
-from crewdefine.schema import AgentConfig, CrewConfig, ToolParameter, ToolSpec
+from crewdefine.schema import (
+    AgentConfig,
+    AnswerModeOption,
+    CrewConfig,
+    OutputComposition,
+    ToolParameter,
+    ToolSpec,
+)
 
 
 class UserIO(Protocol):
@@ -45,6 +52,10 @@ class _InterviewState:
     crew_description: str | None = None
     agents: dict[str, dict[str, Any]] = field(default_factory=dict)
     custom_tools: dict[str, ToolSpec] = field(default_factory=dict)
+    display_name: str | None = None
+    default_answer_mode: str | None = None
+    answer_modes: list[AnswerModeOption] | None = None
+    output_composition: OutputComposition | None = None
     finalized: bool = False
     finalize_note: str | None = None
 
@@ -130,6 +141,10 @@ def run_interview(
     crew = CrewConfig(
         name=state.crew_name,
         description=state.crew_description,
+        display_name=state.display_name,
+        default_answer_mode=state.default_answer_mode,
+        answer_modes=state.answer_modes,
+        output_composition=state.output_composition,
         agents=fully_formed_agents,
         custom_tools=list(state.custom_tools.values()),
     )
@@ -142,6 +157,10 @@ def _seed_state(existing: CrewConfig | None) -> _InterviewState:
     state = _InterviewState(
         crew_name=existing.name,
         crew_description=existing.description,
+        display_name=existing.display_name,
+        default_answer_mode=existing.default_answer_mode,
+        answer_modes=list(existing.answer_modes) if existing.answer_modes else None,
+        output_composition=existing.output_composition,
         custom_tools={t.id: t for t in existing.custom_tools},
     )
     for a in existing.agents:
@@ -182,6 +201,34 @@ def _handle_tool_use(block: dict[str, Any], state: _InterviewState, io: UserIO) 
 
         if name == "record_custom_tool":
             return _record_custom_tool(raw_input, tool_use_id, state)
+
+        if name == "record_answer_modes":
+            modes = [
+                AnswerModeOption.model_validate(m) for m in (raw_input.get("answer_modes") or [])
+            ]
+            if not modes:
+                return _tool_result(
+                    tool_use_id, "Error: answer_modes must be non-empty.", is_error=True
+                )
+            default = str(raw_input.get("default_answer_mode") or "").strip()
+            ids = {m.id for m in modes}
+            if default not in ids:
+                return _tool_result(
+                    tool_use_id,
+                    f"Error: default_answer_mode {default!r} must be one of {sorted(ids)}.",
+                    is_error=True,
+                )
+            state.answer_modes = modes
+            state.default_answer_mode = default
+            return _tool_result(
+                tool_use_id,
+                f"Recorded {len(modes)} answer modes (default={default}).",
+            )
+
+        if name == "record_output_composition":
+            composition = OutputComposition.model_validate(raw_input)
+            state.output_composition = composition
+            return _tool_result(tool_use_id, "Recorded output composition.")
 
         if name == "finalize_crew":
             note = str(raw_input.get("confirmation_note", "")).strip()

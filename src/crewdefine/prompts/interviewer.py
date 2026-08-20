@@ -29,21 +29,25 @@ INTERVIEWER_SYSTEM_PROMPT = f"""You are CrewDefine's interview agent. Your job i
 By the end of the interview, you must have produced a `CrewConfig` via the `finalize_crew` tool. That config contains:
 - A crew `name` (kebab-case) and `description` (one paragraph)
 - 2–8 agents, each with: `id` (snake_case), `name`, `role` (one-line), `tools` (list of tool IDs), `can_delegate_to` (list of agent IDs)
+- Answer modes (which response verbosity options the chat UI shows) and output composition (charts/tables/citations)
 - Any `custom_tools` that don't exist in LabZ yet (see tool catalog below)
 
 The user will write `system_prompt` later via a separate drafting step — you do NOT need to draft prompts during the interview. Just gather enough context that the drafter can produce a strong one.
 
 ## How you work
 
-1. **You only speak through tools.** Every question to the user goes through `ask_user`. Every decision goes through `record_crew_meta`, `record_agent`, `record_custom_tool`, or `finalize_crew`. Never emit free-form text.
+1. **You only speak through tools.** Every question to the user goes through `ask_user`. Every decision goes through `record_crew_meta`, `record_agent`, `record_custom_tool`, `record_answer_modes`, `record_output_composition`, or `finalize_crew`. Never emit free-form text.
 2. **Be conversational and concise.** Each question should be one idea. Offer multiple-choice options when the answer space is small. Don't pile 3 questions into one.
-3. **Lead, don't interrogate.** Propose sensible defaults based on what you've heard and ask the user to confirm or adjust. Example: "Given you mentioned market research, I'd suggest a `market_research` agent with `web_search` and `news_search` tools — sound right, or do you want different tools?"
-4. **Follow LabZ conventions.**
+3. **Lead, don't interrogate.** Propose sensible defaults based on what you've heard and ask the user to confirm or adjust.
+4. **Capture answer modes + output composition before finalizing.** After the roster is clear:
+   - Propose answer modes by archetype: strategy/research crews → all five (`summary`, `light`, `extended`, `project_plan`, `roadmap`); lightweight assistants → `summary` + `light` (optionally `extended`). Use `record_answer_modes` once confirmed.
+   - Propose output composition (citations/charts/tables/images + synthesizer tools). Use `record_output_composition`. Strategy crews usually want citations + charts + visualizer tools; simple planners may want tables only and empty synthesizer_tools.
+5. **Follow LabZ conventions.**
    - **Every crew includes a `director` agent.** It is the hub that interprets the user's request, delegates to specialists, and coordinates the final output. Treat the director as given — do not ask the user whether to include one. You may ask about the director's *name* or *focus*, but not its existence.
    - Most crews also include a `synthesizer` that composes the final answer from specialist findings. Include one by default for any crew doing research or multi-step analysis; omit only for narrow single-purpose crews.
    - Snake_case ids, title-case names, roles phrased as "X who does Y".
    - Delegation forms a hub-and-spoke graph: specialists delegate back to the director (which creates cycles — that's the intended pattern, not a mistake).
-5. **Don't pre-summarize.** When you're ready, call `finalize_crew` directly. CrewDefine renders the full roster and asks the user to confirm before locking it in — so do NOT call `ask_user` first to summarize the roster yourself. (Models tend to ask "does this look right?" without actually pasting the roster, which leaves the user confirming nothing.)
+6. **Don't pre-summarize.** When you're ready, call `finalize_crew` directly. CrewDefine renders the full roster and asks the user to confirm before locking it in — so do NOT call `ask_user` first to summarize the roster yourself.
 
 ## Stopping conditions
 
@@ -198,6 +202,71 @@ INTERVIEWER_TOOLS: list[dict[str, Any]] = [
                 },
             },
             "required": ["id", "description"],
+        },
+    },
+    {
+        "name": "record_answer_modes",
+        "description": (
+            "Record which answer-mode options the chat UI should show. "
+            "Ids must be from: summary, light, extended, project_plan, roadmap. "
+            "Call once after proposing modes to the user."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "default_answer_mode": {
+                    "type": "string",
+                    "enum": ["summary", "light", "extended", "project_plan", "roadmap"],
+                },
+                "answer_modes": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "enum": ["summary", "light", "extended", "project_plan", "roadmap"],
+                            },
+                            "label": {"type": "string"},
+                            "description": {"type": "string"},
+                        },
+                        "required": ["id", "label", "description"],
+                    },
+                },
+            },
+            "required": ["default_answer_mode", "answer_modes"],
+        },
+    },
+    {
+        "name": "record_output_composition",
+        "description": (
+            "Record how rich answers should look: tabs, citations, charts, tables, images, "
+            "and synthesizer_tools. Call once after confirming with the user."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "tabs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["summary", "raw_data", "visualizations", "references"],
+                    },
+                },
+                "citations": {"type": "string", "enum": ["required", "optional", "none"]},
+                "charts": {"type": "string", "enum": ["none", "when_quantitative", "always"]},
+                "tables": {"type": "string", "enum": ["none", "when_structured", "always"]},
+                "images": {
+                    "type": "string",
+                    "enum": ["none", "when_requested", "synthesizer_summary"],
+                },
+                "synthesizer_tools": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Tool ids the synthesizer should have (e.g. visualizer, calculator).",
+                },
+            },
+            "required": ["tabs", "citations", "charts", "tables", "images", "synthesizer_tools"],
         },
     },
     {
