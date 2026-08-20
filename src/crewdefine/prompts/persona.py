@@ -12,7 +12,7 @@ output/format expectations → constraints.
 
 from __future__ import annotations
 
-from crewdefine.schema import AgentConfig, CrewConfig
+from crewdefine.schema import AgentConfig, CrewConfig, apply_manifest_defaults
 from crewdefine.tools_catalog import describe_tool
 
 PERSONA_SYSTEM_PROMPT = """You are CrewDefine's persona drafter. You write the `system_prompt` that a LabZ agent will use at runtime.
@@ -92,8 +92,6 @@ Write the prompt body following the structure in your instructions. Return ONLY 
 def _output_composition_block(agent: AgentConfig, crew: CrewConfig) -> str:
     if agent.id != "synthesizer":
         return ""
-    from crewdefine.schema import apply_manifest_defaults
-
     filled = apply_manifest_defaults(crew)
     oc = filled.output_composition
     if oc is None:

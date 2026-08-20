@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from crewdefine.schema import AgentConfig, CrewConfig, ToolSpec
+from crewdefine.schema import AgentConfig, CrewConfig, ToolSpec, apply_manifest_defaults
 from crewdefine.yaml_format import dump_agent_yaml
 
 
@@ -29,8 +29,6 @@ class WriteResult:
 
 def write_crew(crew: CrewConfig, out_root: Path, *, overwrite: bool = False) -> WriteResult:
     """Write the full crew to disk. Caller must have already validated `crew`."""
-    from crewdefine.schema import apply_manifest_defaults
-
     crew = apply_manifest_defaults(crew)
 
     crew_dir = out_root / crew.name

@@ -19,7 +19,15 @@ from typing import Any
 
 import yaml
 
-from crewdefine.schema import AgentConfig, CrewConfig, ToolSpec
+from crewdefine.schema import (
+    KNOWN_ANSWER_MODE_IDS,
+    AgentConfig,
+    AnswerModeOption,
+    CrewConfig,
+    OutputComposition,
+    ToolSpec,
+    apply_manifest_defaults,
+)
 from crewdefine.tools_catalog import BUILTIN_TOOL_IDS
 from crewdefine.yaml_format import dump_agent_yaml
 
@@ -142,8 +150,6 @@ def _check_infrastructure_agents(agent_ids: set[str], report: ValidationReport) 
 
 
 def _check_manifest_fields(crew: CrewConfig, report: ValidationReport) -> None:
-    from crewdefine.schema import apply_manifest_defaults
-
     filled = apply_manifest_defaults(crew)
     if not filled.answer_modes:
         report.errors.append("answer_modes must be non-empty after defaults.")
@@ -156,8 +162,6 @@ def _check_manifest_fields(crew: CrewConfig, report: ValidationReport) -> None:
 
 
 def _check_manifest_file(crew_dir: Path, report: ValidationReport) -> None:
-    from crewdefine.schema import AnswerModeOption, KNOWN_ANSWER_MODE_IDS, OutputComposition
-
     manifest_path = crew_dir / "crew.yaml"
     if not manifest_path.exists():
         # Also accept agents/crew.yaml (Zero accepts both)
