@@ -207,7 +207,9 @@ def _handle_tool_use(block: dict[str, Any], state: _InterviewState, io: UserIO) 
                 AnswerModeOption.model_validate(m) for m in (raw_input.get("answer_modes") or [])
             ]
             if not modes:
-                return _tool_result(tool_use_id, "Error: answer_modes must be non-empty.", is_error=True)
+                return _tool_result(
+                    tool_use_id, "Error: answer_modes must be non-empty.", is_error=True
+                )
             default = str(raw_input.get("default_answer_mode") or "").strip()
             ids = {m.id for m in modes}
             if default not in ids:
