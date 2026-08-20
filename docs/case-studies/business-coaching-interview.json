@@ -1,0 +1,90 @@
+{
+  "started_at": "2026-08-20T19:42:11.664044+00:00",
+  "ended_at": "2026-08-20T19:46:14.128415+00:00",
+  "model": "claude-sonnet-4-6",
+  "interview_seconds": 242.4,
+  "write_validate_seconds": 0.0,
+  "total_seconds": 242.5,
+  "questions_asked": 2,
+  "agents": [
+    {
+      "id": "director",
+      "name": "Director",
+      "tools": [
+        "validate_information_sufficiency",
+        "generate_followup_questions"
+      ]
+    },
+    {
+      "id": "diagnostician",
+      "name": "Diagnostician",
+      "tools": [
+        "knowledge_base",
+        "document",
+        "swot"
+      ]
+    },
+    {
+      "id": "market_researcher",
+      "name": "Market Researcher",
+      "tools": [
+        "web_search",
+        "news_search",
+        "scrape_website",
+        "competitor_snapshot",
+        "extract_citations_structured"
+      ]
+    },
+    {
+      "id": "financial_analyst",
+      "name": "Financial Analyst",
+      "tools": [
+        "calculator",
+        "web_search",
+        "industry_kpi_benchmark",
+        "runway_and_scenarios"
+      ]
+    },
+    {
+      "id": "action_planner",
+      "name": "Action Planner",
+      "tools": [
+        "generate_recommendations",
+        "generate_followup_questions"
+      ]
+    },
+    {
+      "id": "synthesizer",
+      "name": "Synthesizer",
+      "tools": [
+        "visualizer",
+        "extract_citations"
+      ]
+    }
+  ],
+  "custom_tools": [
+    "industry_kpi_benchmark",
+    "runway_and_scenarios",
+    "competitor_snapshot"
+  ],
+  "transcript": [
+    {
+      "question": "Does this look right, or do you want to adjust anything before I finalize?",
+      "options": [
+        "Looks good \u2014 finalize it",
+        "I want to adjust something"
+      ],
+      "answer": "Looks good \u2014 finalize it",
+      "ts": "2026-08-20T19:43:00.957233+00:00"
+    },
+    {
+      "question": "# Ready to finalize: **business-coaching-crew**\n\nA business coaching crew for founders and operators of early-to-growth-stage B2B SaaS and services companies (seed to Series B). The crew diagnoses business health across positioning, ICP, funnel, and org structure; researches markets and competitors with cited sources; stress-tests unit economics and runway via scenario modeling; produces a concrete 90-day action plan with milestones; and synthesizes a structured coaching report with charts, tables, and citations.\n\n## Agents\n\n### Director `director`\n- **Role:** Orchestrator who interprets founder inputs, checks information sufficiency, fires clarifying follow-up questions, and coordinates all specialist agents toward a coherent coaching session.\n- **Tools:** `validate_information_sufficiency`, `generate_followup_questions`\n- **Delegates to:** `diagnostician`, `market_researcher`, `financial_analyst`, `action_planner`, `synthesizer`\n\n### Diagnostician `diagnostician`\n- **Role:** Business health specialist who assesses positioning, ICP clarity, funnel health, and org bottlenecks using internal documents, knowledge base, and structured SWOT analysis.\n- **Tools:** `knowledge_base`, `document`, `swot`\n- **Delegates to:** `director`\n\n### Market Researcher `market_researcher`\n- **Role:** Competitive and market intelligence analyst who gathers cited market data, competitor profiles, and sector news to contextualize the founder's position.\n- **Tools:** `web_search`, `news_search`, `scrape_website`, `competitor_snapshot`, `extract_citations_structured`\n- **Delegates to:** `director`\n\n### Financial Analyst `financial_analyst`\n- **Role:** Unit economics and runway specialist who stress-tests CAC, LTV, gross margin, and burn rate against industry benchmarks and models multiple cash scenarios.\n- **Tools:** `calculator`, `web_search`, `industry_kpi_benchmark`, `runway_and_scenarios`\n- **Delegates to:** `director`\n\n### Action Planner `action_planner`\n- **Role:** 90-day planning specialist who converts diagnostic and financial findings into a prioritized milestone roadmap with owner suggestions, resources, and follow-up prompts for the founder.\n- **Tools:** `generate_recommendations`, `generate_followup_questions`\n- **Delegates to:** `director`\n\n### Synthesizer `synthesizer`\n- **Role:** Report composer who assembles specialist findings into a cohesive coaching report with charts, structured tables, and formatted citations.\n- **Tools:** `visualizer`, `extract_citations`\n- **Delegates to:** `director`\n\n## Custom tools\n\n- `industry_kpi_benchmark` \u2014 Given an industry vertical and company stage, returns typical KPI ranges (CAC, LTV, churn, gross margin, burn multiple) for use in coaching comparisons and gap analysis.\n- `runway_and_scenarios` \u2014 Given current cash, monthly burn, and optional growth and churn rates, returns projected runway in months plus 2\u20133 scenario tables (base, optimistic, pessimistic) for financial planning discussions.\n- `competitor_snapshot` \u2014 Given a competitor name or URL, returns a structured competitive profile including positioning, pricing signals, ICP cues, and recent news hooks for coaching context.\n\n_Finalizing the business-coaching-crew with 6 agents (director, diagnostician, market_researcher, financial_analyst, action_planner, synthesizer), 3 custom tool stubs, 3 answer modes (default: extended), and full output composition with required citations, conditional charts and tables, and visualizer + extract_citations on the synthesizer._",
+      "options": [
+        "Yes, finalize",
+        "No, keep iterating"
+      ],
+      "answer": "Yes, finalize",
+      "ts": "2026-08-20T19:43:05.233768+00:00"
+    }
+  ]
+}

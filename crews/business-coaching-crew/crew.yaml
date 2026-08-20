@@ -1,0 +1,35 @@
+name: business-coaching-crew
+display_name: Business Coach
+description: A business coaching crew for founders and operators of early-to-growth-stage
+  B2B SaaS and services companies (seed to Series B). The crew diagnoses business
+  health across positioning, ICP, funnel, and org structure; researches markets and
+  competitors with cited sources; stress-tests unit economics and runway via scenario
+  modeling; produces a concrete 90-day action plan with milestones; and synthesizes
+  a structured coaching report with charts, tables, and citations.
+default_answer_mode: extended
+answer_modes:
+- id: summary
+  label: Summary
+  description: A concise executive snapshot — key findings, top 3 risks, and the most
+    critical 90-day action. Best for a quick gut-check.
+- id: light
+  label: Light Coaching
+  description: Diagnosis + market context + top financial flags, without the full
+    scenario tables or detailed roadmap. Good for an interim check-in.
+- id: extended
+  label: Full Coaching Report
+  description: 'Complete report: SWOT, competitive landscape with citations, unit
+    economics scenarios, and the full 90-day milestone plan with charts and tables.'
+output_composition:
+  tabs:
+  - summary
+  - raw_data
+  - visualizations
+  - references
+  citations: required
+  charts: when_quantitative
+  tables: when_structured
+  images: none
+  synthesizer_tools:
+  - visualizer
+  - extract_citations

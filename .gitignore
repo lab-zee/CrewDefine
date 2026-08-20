@@ -52,3 +52,6 @@ coverage.xml
 # Generated crew output (users can commit their own, this ignores the default playground)
 /crews/
 !/crews/.gitkeep
+# Shipped example used by the Lab Z business-coaching case study
+!/crews/business-coaching-crew/
+!/crews/business-coaching-crew/**
