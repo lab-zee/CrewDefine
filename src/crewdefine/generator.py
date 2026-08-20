@@ -29,7 +29,12 @@ class WriteResult:
 
 def write_crew(crew: CrewConfig, out_root: Path, *, overwrite: bool = False) -> WriteResult:
     """Write the full crew to disk. Caller must have already validated `crew`."""
+    # Only rewrite synthesizer tools when composition was explicitly set
+    # (interview / hand-authored), not when archetype defaults fill it in.
+    had_explicit_composition = crew.output_composition is not None
     crew = apply_manifest_defaults(crew)
+    if had_explicit_composition:
+        crew = _apply_synthesizer_tools_from_composition(crew)
 
     crew_dir = out_root / crew.name
     agents_dir = crew_dir / "agents"
@@ -56,6 +61,21 @@ def write_crew(crew: CrewConfig, out_root: Path, *, overwrite: bool = False) -> 
         readme=readme,
         manifest=manifest,
     )
+
+
+def _apply_synthesizer_tools_from_composition(crew: CrewConfig) -> CrewConfig:
+    """Force synthesizer.tools from output_composition.synthesizer_tools when set."""
+    oc = crew.output_composition
+    if oc is None:
+        return crew
+    tools = list(oc.synthesizer_tools or [])
+    agents = []
+    for agent in crew.agents:
+        if agent.id == "synthesizer":
+            agents.append(agent.model_copy(update={"tools": tools}))
+        else:
+            agents.append(agent)
+    return crew.model_copy(update={"agents": agents})
 
 
 def write_single_agent(agent: AgentConfig, crew_dir: Path, *, overwrite: bool = False) -> Path:

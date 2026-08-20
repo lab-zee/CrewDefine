@@ -137,7 +137,45 @@ def validate_crew_dir(crew_dir: Path) -> ValidationReport:
         _check_delegation_targets(agent, agent_ids, report)
 
     _check_manifest_file(crew_dir, report)
+    _maybe_run_zero_validator(crew_dir, report)
     return report
+
+
+def _maybe_run_zero_validator(crew_dir: Path, report: ValidationReport) -> None:
+    """If ZERO_BACKEND is set, also run Zero's canonical validate_crew.py."""
+    import os
+    import subprocess
+    import sys
+
+    zero_backend = os.environ.get("ZERO_BACKEND", "").strip()
+    if not zero_backend:
+        return
+    script = Path(zero_backend) / "scripts" / "validate_crew.py"
+    if not script.is_file():
+        # Also accept backend/scripts layout
+        alt = Path(zero_backend) / "backend" / "scripts" / "validate_crew.py"
+        script = alt if alt.is_file() else script
+    if not script.is_file():
+        report.warnings.append(
+            f"ZERO_BACKEND={zero_backend!r} set but validate_crew.py not found — skipped Zero parity check."
+        )
+        return
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(script), str(crew_dir)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+    except Exception as e:
+        report.warnings.append(f"Zero validator subprocess failed: {e}")
+        return
+    if proc.returncode != 0:
+        detail = (proc.stdout or proc.stderr or "").strip()
+        report.errors.append(
+            f"Zero validator failed (exit {proc.returncode}): {detail[:500] or 'no output'}"
+        )
 
 
 def _check_infrastructure_agents(agent_ids: set[str], report: ValidationReport) -> None:
