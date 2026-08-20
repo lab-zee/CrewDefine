@@ -10,6 +10,20 @@ from crewdefine.schema import CrewConfig
 from crewdefine.validator import validate_crew_dir
 
 
+def test_write_crew_emits_crew_yaml(basic_crew: CrewConfig, tmp_path: Path) -> None:
+    result = write_crew(basic_crew, tmp_path)
+    assert result.manifest.exists()
+    assert result.manifest.name == "crew.yaml"
+    loaded = yaml.safe_load(result.manifest.read_text(encoding="utf-8"))
+    assert loaded["name"] == basic_crew.name
+    assert loaded["display_name"]
+    assert loaded["default_answer_mode"] in {m["id"] for m in loaded["answer_modes"]}
+    assert "output_composition" in loaded
+
+    report = validate_crew_dir(result.crew_dir)
+    assert report.ok, report.errors
+
+
 def test_write_crew_produces_expected_layout(basic_crew: CrewConfig, tmp_path: Path) -> None:
     result = write_crew(basic_crew, tmp_path)
     assert result.crew_dir == tmp_path / basic_crew.name

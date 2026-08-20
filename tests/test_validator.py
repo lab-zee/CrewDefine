@@ -4,20 +4,51 @@ from crewdefine.schema import AgentConfig, CrewConfig, ToolSpec
 from crewdefine.validator import validate_crew
 
 
+def _infra(*extra: AgentConfig) -> list[AgentConfig]:
+    extras = list(extra)
+    director = AgentConfig(
+        id="director",
+        name="Director",
+        role="Director who orchestrates specialists",
+        system_prompt="a" * 100,
+        can_delegate_to=["synthesizer"] + [a.id for a in extras],
+    )
+    synthesizer = AgentConfig(
+        id="synthesizer",
+        name="Synthesizer",
+        role="Synthesizer who composes the final answer",
+        system_prompt="a" * 100,
+    )
+    return [director, synthesizer, *extras]
+
+
 def test_basic_crew_passes(basic_crew: CrewConfig) -> None:
     report = validate_crew(basic_crew)
     assert report.ok, report.errors
 
 
-def test_unknown_delegation_target_fails() -> None:
-    bad = AgentConfig(
+def test_missing_synthesizer_fails() -> None:
+    director = AgentConfig(
         id="director",
         name="Director",
         role="Director who orchestrates",
         system_prompt="a" * 100,
+    )
+    crew = CrewConfig(name="crew", description="x", agents=[director])
+    report = validate_crew(crew)
+    assert not report.ok
+    assert any("synthesizer" in e for e in report.errors)
+
+
+def test_unknown_delegation_target_fails() -> None:
+    bad = AgentConfig(
+        id="researcher",
+        name="Researcher",
+        role="Researcher who digs",
+        system_prompt="a" * 100,
         can_delegate_to=["ghost"],
     )
-    crew = CrewConfig(name="crew", description="x", agents=[bad])
+    crew = CrewConfig(name="crew", description="x", agents=_infra(bad))
     report = validate_crew(crew)
     assert not report.ok
     assert any("ghost" in e for e in report.errors)
@@ -25,13 +56,13 @@ def test_unknown_delegation_target_fails() -> None:
 
 def test_unknown_tool_fails() -> None:
     agent = AgentConfig(
-        id="director",
-        name="Director",
-        role="Director who orchestrates",
+        id="researcher",
+        name="Researcher",
+        role="Researcher who digs",
         system_prompt="a" * 100,
         tools=["nonexistent_tool"],
     )
-    crew = CrewConfig(name="crew", description="x", agents=[agent])
+    crew = CrewConfig(name="crew", description="x", agents=_infra(agent))
     report = validate_crew(crew)
     assert not report.ok
     assert any("nonexistent_tool" in e for e in report.errors)
@@ -44,16 +75,10 @@ def test_custom_tool_resolves(crew_with_custom_tool: CrewConfig) -> None:
 
 def test_unused_custom_tool_warns() -> None:
     orphan = ToolSpec(id="orphan_tool", description="nobody calls me")
-    director = AgentConfig(
-        id="director",
-        name="Director",
-        role="Director who orchestrates",
-        system_prompt="a" * 100,
-    )
     crew = CrewConfig(
         name="crew",
         description="x",
-        agents=[director],
+        agents=_infra(),
         custom_tools=[orphan],
     )
     report = validate_crew(crew)
@@ -62,17 +87,7 @@ def test_unused_custom_tool_warns() -> None:
 
 
 def test_back_delegation_is_allowed() -> None:
-    """LabZ's director ↔ specialist pattern creates graph cycles by design
-    (director delegates down, specialists delegate back to director). The
-    validator must accept this; runtime depth limits handle actual runaway
-    loops."""
-    director = AgentConfig(
-        id="director",
-        name="Director",
-        role="Director who orchestrates specialists",
-        system_prompt="a" * 100,
-        can_delegate_to=["specialist"],
-    )
+    """LabZ's director ↔ specialist pattern creates graph cycles by design."""
     specialist = AgentConfig(
         id="specialist",
         name="Specialist",
@@ -80,12 +95,26 @@ def test_back_delegation_is_allowed() -> None:
         system_prompt="a" * 100,
         can_delegate_to=["director"],
     )
-    crew = CrewConfig(name="hub-crew", description="x", agents=[director, specialist])
+    director = AgentConfig(
+        id="director",
+        name="Director",
+        role="Director who orchestrates specialists",
+        system_prompt="a" * 100,
+        can_delegate_to=["specialist", "synthesizer"],
+    )
+    synthesizer = AgentConfig(
+        id="synthesizer",
+        name="Synthesizer",
+        role="Synthesizer who composes the final answer",
+        system_prompt="a" * 100,
+    )
+    crew = CrewConfig(
+        name="hub-crew", description="x", agents=[director, specialist, synthesizer]
+    )
     report = validate_crew(crew)
     assert report.ok, report.errors
 
 
 def test_round_trip_produces_stable_yaml(basic_crew: CrewConfig) -> None:
-    # The round-trip check inside validate_crew should pass on a well-formed crew.
     report = validate_crew(basic_crew)
     assert report.ok, report.errors

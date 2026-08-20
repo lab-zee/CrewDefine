@@ -37,18 +37,29 @@ def basic_crew(minimal_agent: AgentConfig) -> CrewConfig:
             "your findings to the director."
         ),
     )
+    synthesizer = AgentConfig(
+        id="synthesizer",
+        name="Synthesizer",
+        role="Composes the final user-facing answer from specialist outputs",
+        tools=["calculator"],
+        can_delegate_to=[],
+        system_prompt=(
+            "You are the Synthesizer. Combine specialist findings into a clear final answer "
+            "for the user. Respect the answer mode and include structured data when relevant."
+        ),
+    )
     director = AgentConfig(
         id=minimal_agent.id,
         name=minimal_agent.name,
         role=minimal_agent.role,
         tools=[],
-        can_delegate_to=["researcher"],
+        can_delegate_to=["researcher", "synthesizer"],
         system_prompt=minimal_agent.system_prompt,
     )
     return CrewConfig(
         name="market-intel",
         description="A small crew for market-intelligence tasks.",
-        agents=[director, researcher],
+        agents=[director, researcher, synthesizer],
     )
 
 

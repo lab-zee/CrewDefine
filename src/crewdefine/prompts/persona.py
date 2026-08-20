@@ -85,6 +85,32 @@ def persona_user_prompt(agent: AgentConfig, crew: CrewConfig) -> str:
 ## Draft now
 
 Write the prompt body following the structure in your instructions. Return ONLY the prompt text — no preamble, no code fences, no closing remarks.
+{_output_composition_block(agent, crew)}
+"""
+
+
+def _output_composition_block(agent: AgentConfig, crew: CrewConfig) -> str:
+    if agent.id != "synthesizer":
+        return ""
+    from crewdefine.schema import apply_manifest_defaults
+
+    filled = apply_manifest_defaults(crew)
+    oc = filled.output_composition
+    if oc is None:
+        return ""
+    return f"""
+## Output composition (Zero rich answers)
+
+This agent is the final synthesizer. Instruct it to honor these composition rules:
+
+- **Tabs:** {", ".join(oc.tabs)}
+- **Citations:** {oc.citations}
+- **Charts:** {oc.charts} (use `visualizer` + `[VISUALIZATION_START]` / `[VISUALIZATION_END]` when charts apply)
+- **Tables:** {oc.tables} (emit `[DATA_START]` / `[DATA_END]` JSON blocks for the Data tab)
+- **Images:** {oc.images}
+- **Preferred synthesizer tools:** {", ".join(f"`{t}`" for t in oc.synthesizer_tools) or "(none specified)"}
+
+When tables are enabled, include at least one DATA block for comparisons, lists, or plans.
 """
 
 
