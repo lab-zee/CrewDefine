@@ -82,8 +82,7 @@ class AnswerModeOption(BaseModel):
     def _known_mode_id(cls, v: str) -> str:
         if v not in KNOWN_ANSWER_MODE_IDS:
             raise ValueError(
-                f"Answer mode id {v!r} is not supported. "
-                f"Allowed: {sorted(KNOWN_ANSWER_MODE_IDS)}."
+                f"Answer mode id {v!r} is not supported. Allowed: {sorted(KNOWN_ANSWER_MODE_IDS)}."
             )
         return v
 
@@ -247,9 +246,7 @@ def apply_manifest_defaults(crew: CrewConfig) -> CrewConfig:
     """Fill display_name / answer_modes / output_composition when unset."""
     archetype = infer_archetype(crew)
     modes_src = _STRATEGY_MODES if archetype == "strategy" else _LIGHTWEIGHT_MODES
-    composition = (
-        _STRATEGY_COMPOSITION if archetype == "strategy" else _LIGHTWEIGHT_COMPOSITION
-    )
+    composition = _STRATEGY_COMPOSITION if archetype == "strategy" else _LIGHTWEIGHT_COMPOSITION
 
     display_name = crew.display_name
     if not display_name or not display_name.strip():

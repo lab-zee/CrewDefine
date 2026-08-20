@@ -108,9 +108,7 @@ def test_back_delegation_is_allowed() -> None:
         role="Synthesizer who composes the final answer",
         system_prompt="a" * 100,
     )
-    crew = CrewConfig(
-        name="hub-crew", description="x", agents=[director, specialist, synthesizer]
-    )
+    crew = CrewConfig(name="hub-crew", description="x", agents=[director, specialist, synthesizer])
     report = validate_crew(crew)
     assert report.ok, report.errors
 

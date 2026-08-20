@@ -210,9 +210,7 @@ def _check_manifest_file(crew_dir: Path, report: ValidationReport) -> None:
             f"crew.yaml: default_answer_mode {default!r} is not listed in answer_modes."
         )
     elif default and default not in KNOWN_ANSWER_MODE_IDS:
-        report.errors.append(
-            f"crew.yaml: default_answer_mode {default!r} is not a known mode id."
-        )
+        report.errors.append(f"crew.yaml: default_answer_mode {default!r} is not a known mode id.")
 
     if "output_composition" in raw and raw["output_composition"] is not None:
         try:
