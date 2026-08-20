@@ -19,7 +19,15 @@ from typing import Any
 
 import yaml
 
-from crewdefine.schema import AgentConfig, CrewConfig, ToolSpec
+from crewdefine.schema import (
+    KNOWN_ANSWER_MODE_IDS,
+    AgentConfig,
+    AnswerModeOption,
+    CrewConfig,
+    OutputComposition,
+    ToolSpec,
+    apply_manifest_defaults,
+)
 from crewdefine.tools_catalog import BUILTIN_TOOL_IDS
 from crewdefine.yaml_format import dump_agent_yaml
 
@@ -70,12 +78,15 @@ def validate_crew(crew: CrewConfig) -> ValidationReport:
     agent_ids = {a.id for a in crew.agents}
     builtin_plus_custom: set[str] = set(BUILTIN_TOOL_IDS) | {t.id for t in crew.custom_tools}
 
+    _check_infrastructure_agents(agent_ids, report)
+
     for agent in crew.agents:
         _check_tool_refs(agent, builtin_plus_custom, report)
         _check_delegation_targets(agent, agent_ids, report)
         _check_round_trip(agent, report)
 
     _check_custom_tools_used(crew.custom_tools, crew.agents, report)
+    _check_manifest_fields(crew, report)
     return report
 
 
@@ -89,6 +100,8 @@ def validate_crew_dir(crew_dir: Path) -> ValidationReport:
 
     loaded: list[AgentConfig] = []
     for path in sorted(agents_dir.glob("*.yaml")):
+        if path.name in {"crew.yaml"} or path.name.startswith("_"):
+            continue
         try:
             raw = yaml.safe_load(path.read_text(encoding="utf-8"))
         except yaml.YAMLError as e:
@@ -110,9 +123,11 @@ def validate_crew_dir(crew_dir: Path) -> ValidationReport:
     if report.errors:
         return report
 
+    agent_ids = {a.id for a in loaded}
+    _check_infrastructure_agents(agent_ids, report)
+
     # We don't know custom tools from the dir alone; allow any tool id not in
     # BUILTIN_TOOL_IDS but surface it as a warning so a human can verify.
-    agent_ids = {a.id for a in loaded}
     for agent in loaded:
         for tool_id in agent.tools:
             if tool_id not in BUILTIN_TOOL_IDS:
@@ -121,7 +136,87 @@ def validate_crew_dir(crew_dir: Path) -> ValidationReport:
                 )
         _check_delegation_targets(agent, agent_ids, report)
 
+    _check_manifest_file(crew_dir, report)
     return report
+
+
+def _check_infrastructure_agents(agent_ids: set[str], report: ValidationReport) -> None:
+    for required in ("director", "synthesizer"):
+        if required not in agent_ids:
+            report.errors.append(
+                f"Missing required infrastructure agent id {required!r}. "
+                "Zero's registry hard-codes these names."
+            )
+
+
+def _check_manifest_fields(crew: CrewConfig, report: ValidationReport) -> None:
+    filled = apply_manifest_defaults(crew)
+    if not filled.answer_modes:
+        report.errors.append("answer_modes must be non-empty after defaults.")
+        return
+    mode_ids = {m.id for m in filled.answer_modes}
+    if filled.default_answer_mode not in mode_ids:
+        report.errors.append(
+            f"default_answer_mode {filled.default_answer_mode!r} not in answer_modes."
+        )
+
+
+def _check_manifest_file(crew_dir: Path, report: ValidationReport) -> None:
+    manifest_path = crew_dir / "crew.yaml"
+    if not manifest_path.exists():
+        # Also accept agents/crew.yaml (Zero accepts both)
+        alt = crew_dir / "agents" / "crew.yaml"
+        if alt.exists():
+            manifest_path = alt
+        else:
+            report.warnings.append(
+                "No crew.yaml found — Zero will fall back to built-in answer modes. "
+                "Emit crew.yaml for seamless handoff."
+            )
+            return
+
+    try:
+        raw = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as e:
+        report.errors.append(f"crew.yaml: YAML parse error: {e}")
+        return
+    if not isinstance(raw, dict):
+        report.errors.append("crew.yaml: top-level must be a mapping.")
+        return
+
+    for key in ("name", "display_name", "description", "default_answer_mode", "answer_modes"):
+        if key not in raw:
+            report.errors.append(f"crew.yaml: missing required field {key!r}.")
+
+    modes = raw.get("answer_modes") or []
+    if not isinstance(modes, list) or not modes:
+        report.errors.append("crew.yaml: answer_modes must be a non-empty list.")
+        return
+
+    mode_ids: list[str] = []
+    for i, mode in enumerate(modes):
+        if not isinstance(mode, dict):
+            report.errors.append(f"crew.yaml: answer_modes[{i}] must be a mapping.")
+            continue
+        try:
+            opt = AnswerModeOption.model_validate(mode)
+            mode_ids.append(opt.id)
+        except Exception as e:
+            report.errors.append(f"crew.yaml: answer_modes[{i}]: {e}")
+
+    default = raw.get("default_answer_mode")
+    if default and default not in mode_ids and default in KNOWN_ANSWER_MODE_IDS:
+        report.errors.append(
+            f"crew.yaml: default_answer_mode {default!r} is not listed in answer_modes."
+        )
+    elif default and default not in KNOWN_ANSWER_MODE_IDS:
+        report.errors.append(f"crew.yaml: default_answer_mode {default!r} is not a known mode id.")
+
+    if "output_composition" in raw and raw["output_composition"] is not None:
+        try:
+            OutputComposition.model_validate(raw["output_composition"])
+        except Exception as e:
+            report.errors.append(f"crew.yaml: output_composition: {e}")
 
 
 def _check_tool_refs(agent: AgentConfig, known_tools: set[str], report: ValidationReport) -> None:

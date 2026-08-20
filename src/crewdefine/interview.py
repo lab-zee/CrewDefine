@@ -286,7 +286,9 @@ def _render_roster_summary(state: _InterviewState, note: str) -> str:
         lines.append(f"- **Role:** {agent['role']}")
         tools = agent.get("tools") or []
         lines.append(
-            f"- **Tools:** {', '.join(f'`{t}`' for t in tools)}" if tools else "- **Tools:** _(none)_"
+            f"- **Tools:** {', '.join(f'`{t}`' for t in tools)}"
+            if tools
+            else "- **Tools:** _(none)_"
         )
         delegates = agent.get("can_delegate_to") or []
         if delegates:
