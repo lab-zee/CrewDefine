@@ -34,6 +34,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "build",
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "ruff>=0.4",
@@ -55,7 +56,15 @@ packages = ["src/crewdefine"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-src = ["src", "tests"]
+src = [
+    "src",
+    "tests",
+    "scripts",
+    "crews/business-coaching-crew/tools",
+    "crews/technical-due-diligence/tools",
+    "crews/research-evidence-synthesis/tools",
+    "crews/incident-analysis/tools",
+]
 
 [tool.ruff.lint]
 select = [
@@ -72,6 +81,7 @@ ignore = ["E501"] # handled by formatter
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B008"]
+"scripts/**" = ["RUF001"]
 # Typer's idiomatic declaration uses `typer.Option(...)` / `typer.Argument(...)` in defaults.
 # Also: the CLI uses `›` (single right-pointing angle quote) as a prompt glyph — intentional typography.
 "src/crewdefine/cli.py" = ["B008", "RUF001"]
@@ -83,8 +93,22 @@ quote-style = "double"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = "-ra --strict-markers"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--cov=crewdefine",
+    "--cov-report=term-missing",
+    "--cov-fail-under=85",
+]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["crewdefine"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
 
 [tool.mypy]
 python_version = "3.10"

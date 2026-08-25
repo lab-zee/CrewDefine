@@ -29,12 +29,17 @@ visualizations are conditional; structured tables are required; generated images
 ## Verification
 
 ```bash
+crewdefine validate crews/business-coaching-crew
+crewdefine validate crews/dinner-planning-crew
 crewdefine validate crews/technical-due-diligence
 crewdefine validate crews/research-evidence-synthesis
 crewdefine validate crews/incident-analysis
 
-pytest tests/test_professional_crew_tools.py
+pytest
 ```
+
+The parametrized reference-crew tests execute these validations in local and CI runs. The full
+test command also exercises deterministic crew tools and enforces the repository's coverage floor.
 
 Zero's `backend/scripts/validate_crew.py` was run against each package with its plugin directory.
 Each package was then instantiated through Zero's `AgentRegistry`; all loaded eight agents and five

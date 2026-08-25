@@ -92,7 +92,7 @@ class BriefIO:
         if options:
             joined = " | ".join(options).lower()
             if any(x in joined for x in ("yes", "looks good", "proceed", "confirm", "finalize")):
-                for i, opt in enumerate(options):
+                for opt in options:
                     if re.search(r"yes|looks good|proceed|confirm|finalize|ship", opt, re.I):
                         return opt
                 return options[0]
@@ -116,7 +116,9 @@ class BriefIO:
                     return opt
             return options[0]
 
-        if any(w in q for w in ("confirm", "looks good", "ready to finalize", "proceed", "happy with")):
+        if any(
+            w in q for w in ("confirm", "looks good", "ready to finalize", "proceed", "happy with")
+        ):
             self._confirm_seen += 1
             return "yes — ship it"
 
@@ -140,7 +142,9 @@ class BriefIO:
                 "and competitor_snapshot. Stubs OK."
             )
 
-        if "tool" in q and ("builtin" in q or "built-in" in q or "which tools" in q or "assign" in q):
+        if "tool" in q and (
+            "builtin" in q or "built-in" in q or "which tools" in q or "assign" in q
+        ):
             if "diagnostic" in q:
                 return "swot, knowledge_base, document, validate_information_sufficiency"
             if "market" in q:
@@ -214,7 +218,9 @@ def main() -> None:
 
     t1 = time.perf_counter()
     # Force a stable folder name for the case study
-    crew = crew.model_copy(update={"name": "business-coaching-crew", "display_name": "Business Coach"})
+    crew = crew.model_copy(
+        update={"name": "business-coaching-crew", "display_name": "Business Coach"}
+    )
     _validate_and_write(crew, OUT_ROOT, overwrite=True)
     write_s = time.perf_counter() - t1
     total_s = time.perf_counter() - t0

@@ -6,7 +6,18 @@ import importlib.util
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
+from crewdefine.validator import validate_crew_dir
+
 ROOT = Path(__file__).parents[1]
+MAINTAINED_CREWS = (
+    "business-coaching-crew",
+    "dinner-planning-crew",
+    "technical-due-diligence",
+    "research-evidence-synthesis",
+    "incident-analysis",
+)
 
 
 def _load(relative_path: str) -> ModuleType:
@@ -16,6 +27,76 @@ def _load(relative_path: str) -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.mark.parametrize("crew_name", MAINTAINED_CREWS)
+def test_maintained_crew_passes_repository_validation(crew_name: str) -> None:
+    report = validate_crew_dir(ROOT / "crews" / crew_name)
+    assert report.ok, report.errors
+
+
+def test_competitor_snapshot_builds_offline_name_profile() -> None:
+    module = _load("crews/business-coaching-crew/tools/competitor_snapshot.py")
+    result = module.competitor_snapshot(" Acme ")
+    assert result["competitor_input"] == "Acme"
+    assert result["name"] == "Acme"
+    assert result["domain"] is None
+    assert result["page_excerpt"] is None
+
+
+def test_competitor_snapshot_normalizes_url_and_excerpt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load("crews/business-coaching-crew/tools/competitor_snapshot.py")
+    monkeypatch.setattr(module, "_try_fetch_text", lambda _url: "<title>Evidence</title>")
+    result = module.competitor_snapshot("https://www.acme.example/about")
+    assert result["name"] == "Acme"
+    assert result["domain"] == "www.acme.example"
+    assert result["positioning"]["notes_from_page"] == "<title>Evidence</title>"
+
+
+@pytest.mark.parametrize(
+    ("industry", "stage", "normalized_industry", "normalized_stage"),
+    [
+        ("B2B software", "pre-seed", "b2b_saas", "seed"),
+        ("Consulting agency", "Series A", "services", "series_a"),
+        ("Professional services", "Series B", "services", "series_b"),
+        ("unknown", "unknown", "b2b_saas", "seed"),
+    ],
+)
+def test_industry_kpi_benchmark_normalizes_inputs(
+    industry: str,
+    stage: str,
+    normalized_industry: str,
+    normalized_stage: str,
+) -> None:
+    module = _load("crews/business-coaching-crew/tools/industry_kpi_benchmark.py")
+    result = module.industry_kpi_benchmark(industry, stage)
+    assert result["normalized_industry"] == normalized_industry
+    assert result["normalized_stage"] == normalized_stage
+    assert result["kpis"]["gross_margin_pct"]["p50"] > 0
+
+
+def test_runway_scenarios_flag_short_runway_and_order_cases() -> None:
+    module = _load("crews/business-coaching-crew/tools/runway_and_scenarios.py")
+    result = module.runway_and_scenarios(
+        cash=500_000,
+        monthly_burn=100_000,
+        growth_rate=0.05,
+        churn_rate=0.01,
+        monthly_revenue=100_000,
+    )
+    scenarios = {item["name"]: item for item in result["scenarios"]}
+    assert result["coaching_flags"] == {"under_6_months": True, "under_12_months": True}
+    assert scenarios["optimistic"]["runway_months"] > scenarios["base"]["runway_months"]
+    assert scenarios["pessimistic"]["runway_months"] < scenarios["base"]["runway_months"]
+
+
+def test_runway_scenarios_handle_cash_flow_positive_case() -> None:
+    module = _load("crews/business-coaching-crew/tools/runway_and_scenarios.py")
+    result = module.runway_and_scenarios(cash=100_000, monthly_burn=0)
+    assert result["base_runway_months"] == "infinite_or_cash_flow_positive"
+    assert result["coaching_flags"] == {"under_6_months": False, "under_12_months": False}
 
 
 def test_dependency_risk_matrix_prioritizes_explicit_risk_signals() -> None:

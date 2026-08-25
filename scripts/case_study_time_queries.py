@@ -14,13 +14,16 @@ API = "http://localhost:3001"
 CREDS = Path("/tmp/case_study_creds.txt").read_text().strip().splitlines()
 API_KEY = CREDS[2]
 HEADERS = {"X-API-Key": API_KEY, "Content-Type": "application/json"}
-OUT = Path("/Users/davidinwald/Documents/GitHub/CrewDefine/crews/_case_study_business_coaching_queries.json")
+OUT = Path(
+    "/Users/davidinwald/Documents/GitHub/CrewDefine/crews/_case_study_business_coaching_queries.json"
+)
 
 
 def current_user_id() -> int:
     r = requests.get(f"{API}/api/auth/verify", headers=HEADERS, timeout=30)
     r.raise_for_status()
     return int(r.json()["id"])
+
 
 QUESTIONS = [
     {
@@ -122,7 +125,10 @@ def stream_chat(org_id: int, thread_id: int, message: str, answer_mode: str) -> 
                     continue
                 events.append({"type": ev.get("type"), "t": round(time.perf_counter() - t0, 2)})
                 et = ev.get("type")
-                if et in {"response", "token", "content", "progress_update", "trace_update"} and first_tokenish_s is None:
+                if (
+                    et in {"response", "token", "content", "progress_update", "trace_update"}
+                    and first_tokenish_s is None
+                ):
                     first_tokenish_s = time.perf_counter() - t0
                 if et == "response":
                     data = ev.get("data") or {}
@@ -136,7 +142,9 @@ def stream_chat(org_id: int, thread_id: int, message: str, answer_mode: str) -> 
     return {
         "total_seconds": round(done_s or total, 1),
         "ttfb_seconds": round(first_event_s, 1) if first_event_s is not None else None,
-        "first_progress_seconds": round(first_tokenish_s, 1) if first_tokenish_s is not None else None,
+        "first_progress_seconds": round(first_tokenish_s, 1)
+        if first_tokenish_s is not None
+        else None,
         "event_types": [e["type"] for e in events],
         "event_count": len(events),
         "response_preview": (response_text or "")[:1200],
@@ -169,7 +177,7 @@ def main() -> None:
                 print("ERROR", timing["error"])
             else:
                 print((timing.get("response_preview") or "")[:400])
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             row["error"] = str(exc)
             print("FAILED", exc)
         results["queries"].append(row)

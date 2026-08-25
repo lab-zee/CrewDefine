@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 TOOL_DEFINITION: dict[str, Any] = {
     "type": "function",
     "function": {

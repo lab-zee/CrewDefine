@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+import pytest
+
+from crewdefine.generator import write_crew
 from crewdefine.schema import AgentConfig, CrewConfig, ToolSpec
-from crewdefine.validator import validate_crew
+from crewdefine.validator import validate_crew, validate_crew_dir
 
 
 def _infra(*extra: AgentConfig) -> list[AgentConfig]:
@@ -71,6 +76,57 @@ def test_unknown_tool_fails() -> None:
 def test_custom_tool_resolves(crew_with_custom_tool: CrewConfig) -> None:
     report = validate_crew(crew_with_custom_tool)
     assert report.ok, report.errors
+
+
+def test_directory_validation_requires_referenced_custom_tool_file(
+    crew_with_custom_tool: CrewConfig, tmp_path: Path
+) -> None:
+    result = write_crew(crew_with_custom_tool, tmp_path)
+    (result.crew_dir / "tools" / "crm_lookup.py").unlink()
+    report = validate_crew_dir(result.crew_dir)
+    assert not report.ok
+    assert any("tools/crm_lookup.py" in error for error in report.errors)
+
+
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        ("broken: [", "YAML parse error"),
+        ("- not\n- a\n- mapping\n", "top-level must be a mapping"),
+        ("id: invalid\n", "Field required"),
+    ],
+)
+def test_directory_validation_reports_invalid_agent_files(
+    content: str,
+    expected: str,
+    tmp_path: Path,
+) -> None:
+    agents_dir = tmp_path / "agents"
+    agents_dir.mkdir()
+    (agents_dir / "invalid.yaml").write_text(content, encoding="utf-8")
+    report = validate_crew_dir(tmp_path)
+    assert not report.ok
+    assert any(expected in error for error in report.errors)
+
+
+def test_directory_validation_warns_when_manifest_is_missing(
+    basic_crew: CrewConfig, tmp_path: Path
+) -> None:
+    result = write_crew(basic_crew, tmp_path)
+    result.manifest.unlink()
+    report = validate_crew_dir(result.crew_dir)
+    assert report.ok
+    assert any("No crew.yaml found" in warning for warning in report.warnings)
+
+
+def test_directory_validation_rejects_non_mapping_manifest(
+    basic_crew: CrewConfig, tmp_path: Path
+) -> None:
+    result = write_crew(basic_crew, tmp_path)
+    result.manifest.write_text("- invalid\n", encoding="utf-8")
+    report = validate_crew_dir(result.crew_dir)
+    assert not report.ok
+    assert "crew.yaml: top-level must be a mapping." in report.errors
 
 
 def test_unused_custom_tool_warns() -> None:

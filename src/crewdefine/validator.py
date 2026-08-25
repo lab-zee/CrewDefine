@@ -126,13 +126,15 @@ def validate_crew_dir(crew_dir: Path) -> ValidationReport:
     agent_ids = {a.id for a in loaded}
     _check_infrastructure_agents(agent_ids, report)
 
-    # We don't know custom tools from the dir alone; allow any tool id not in
-    # BUILTIN_TOOL_IDS but surface it as a warning so a human can verify.
+    tools_dir = crew_dir / "tools"
+    custom_tool_ids = (
+        {path.stem for path in tools_dir.glob("*.py")} if tools_dir.is_dir() else set()
+    )
     for agent in loaded:
         for tool_id in agent.tools:
-            if tool_id not in BUILTIN_TOOL_IDS:
-                report.warnings.append(
-                    f"{agent.id}: tool {tool_id!r} is not a built-in LabZ tool — ensure a stub exists under tools/."
+            if tool_id not in BUILTIN_TOOL_IDS and tool_id not in custom_tool_ids:
+                report.errors.append(
+                    f"{agent.id}: custom tool {tool_id!r} has no matching tools/{tool_id}.py."
                 )
         _check_delegation_targets(agent, agent_ids, report)
 
