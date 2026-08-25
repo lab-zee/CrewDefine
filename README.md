@@ -45,12 +45,22 @@ crews/strategy-crew/
 
 ### Load into Zero (LabZ)
 
-From the [Zero](https://github.com/davidinwald/Zero) repo:
+From the [Zero](https://github.com/lab-zee/Zero) repo, either run the bundled demo (Business Coach, no CrewDefine required):
 
 ```bash
-./scripts/load-crew.sh ../CrewDefine/crews/strategy-crew
-docker compose restart backend
+cp .env.example .env   # add keys
+./scripts/demo.sh
 ```
+
+Or load a crew you authored here:
+
+```bash
+./scripts/load-crew.sh --restart ../CrewDefine/crews/dinner-planning-crew
+```
+
+Shipped examples in this repo: `crews/business-coaching-crew`, `crews/dinner-planning-crew`.
+
+Browse the public crew catalog on the Lab Z site (`/crews`). The nebula → solar-system piece there is an illustration of the idea, not a live map of each crew.
 
 `crew.yaml` drives Zero's answer-mode selector (`GET /api/crew`). Contract: see Zero's `docs/CREW_HANDOFF.md`.
 

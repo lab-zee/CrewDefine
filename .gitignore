@@ -50,8 +50,10 @@ coverage.xml
 *.local.yaml
 
 # Generated crew output (users can commit their own, this ignores the default playground)
-/crews/
+/crews/*
 !/crews/.gitkeep
-# Shipped example used by the Lab Z business-coaching case study
+# Shipped examples (catalog + case study)
 !/crews/business-coaching-crew/
 !/crews/business-coaching-crew/**
+!/crews/dinner-planning-crew/
+!/crews/dinner-planning-crew/**
