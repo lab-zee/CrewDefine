@@ -57,3 +57,11 @@ coverage.xml
 !/crews/business-coaching-crew/**
 !/crews/dinner-planning-crew/
 !/crews/dinner-planning-crew/**
+!/crews/technical-due-diligence/
+!/crews/technical-due-diligence/**
+!/crews/research-evidence-synthesis/
+!/crews/research-evidence-synthesis/**
+!/crews/incident-analysis/
+!/crews/incident-analysis/**
+/crews/**/__pycache__/
+/crews/**/*.pyc

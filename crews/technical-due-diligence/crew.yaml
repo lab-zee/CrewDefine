@@ -1,0 +1,41 @@
+name: technical-due-diligence
+display_name: Technical Due Diligence
+description: Evaluates a software system or technology company from repository exports,
+  architecture documents, dependency inventories, security reports, operational evidence,
+  and public technical sources. Produces evidence-linked findings with explicit uncertainty,
+  severity and confidence scores, and prioritized remediation. Strictly distinguishes
+  observed evidence, inference, and missing evidence — never invents repository facts.
+default_answer_mode: extended
+answer_modes:
+- id: summary
+  label: Decision Brief
+  description: Key findings, blockers, and highest risks — condensed for executive
+    decision-making.
+- id: light
+  label: Review Memo
+  description: Evidence table and prioritized findings — suitable for technical reviewers
+    needing a structured overview.
+- id: extended
+  label: Full Technical Report
+  description: Complete methods, architecture, security, dependencies, reliability,
+    limitations, and full evidence register.
+- id: project_plan
+  label: Remediation Plan
+  description: Prioritized actions with owners, effort estimates, and verification
+    criteria.
+- id: roadmap
+  label: Risk-Reduction Roadmap
+  description: Sequenced risk-reduction work with explicit inter-item dependencies.
+output_composition:
+  tabs:
+  - summary
+  - raw_data
+  - visualizations
+  - references
+  citations: required
+  charts: when_quantitative
+  tables: always
+  images: none
+  synthesizer_tools:
+  - visualizer
+  - extract_citations_structured

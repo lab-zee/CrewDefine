@@ -1,0 +1,42 @@
+name: incident-analysis
+display_name: Incident Analysis
+description: Analyzes production software and infrastructure incidents from alerts,
+  logs, deployment records, tickets, chat transcripts, runbooks, architecture material,
+  and operator statements. Reconstructs a sourced timeline, distinguishes proximate
+  triggers from contributing conditions, evaluates detection and response quality,
+  identifies uncertainty and conflicting evidence, and produces blameless corrective
+  actions with owners and verification criteria. The crew never asserts root cause
+  beyond what evidence supports and never infers individual intent or competence.
+default_answer_mode: extended
+answer_modes:
+- id: summary
+  label: Incident Brief
+  description: Impact, current best explanation, uncertainty, and immediate controls.
+- id: light
+  label: Review Memo
+  description: Timeline, contributing conditions, response assessment, and priority
+    actions.
+- id: extended
+  label: Full Incident Analysis
+  description: Evidence register, timeline, hypotheses, detection and response analysis,
+    complete corrective actions, and limitations.
+- id: project_plan
+  label: Corrective Action Plan
+  description: Owners, dependencies, verification criteria, and review dates for all
+    corrective actions.
+- id: roadmap
+  label: Reliability Roadmap
+  description: Systemic improvements sequenced by risk and dependency.
+output_composition:
+  tabs:
+  - summary
+  - raw_data
+  - visualizations
+  - references
+  citations: required
+  charts: when_quantitative
+  tables: always
+  images: none
+  synthesizer_tools:
+  - visualizer
+  - extract_citations_structured

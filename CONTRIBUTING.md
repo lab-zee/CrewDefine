@@ -29,7 +29,8 @@ CI runs these on Python 3.10, 3.11, and 3.12. Match them locally before opening 
 - Add or update tests for any behavior change.
 - Keep the CLI surface stable — new commands are fine, renames and removals need a migration note in `CHANGELOG.md`.
 - If you change the emitted YAML shape, update the schema in `src/crewdefine/schema.py` *and* the round-trip tests.
-- Don't commit `.env` or API keys. Don't commit generated playground crews under `/crews/` — shipped examples (`business-coaching-crew`, `dinner-planning-crew`) are the exception.
+- Don't commit `.env` or API keys. Generated playground crews under `/crews/` remain ignored;
+  only directories explicitly allowlisted in `.gitignore` are maintained reference configurations.
 
 ## Design principles
 
