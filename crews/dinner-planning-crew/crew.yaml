@@ -1,0 +1,20 @@
+name: dinner-planning-crew
+display_name: Dinner Planner
+description: Meal planning from preferences and constraints.
+default_answer_mode: summary
+answer_modes:
+- id: summary
+  label: Quick Answer
+  description: Short, actionable response
+- id: light
+  label: Full Answer
+  description: Balanced response with key detail
+output_composition:
+  tabs:
+  - summary
+  - raw_data
+  citations: optional
+  charts: none
+  tables: when_structured
+  images: none
+  synthesizer_tools: []
