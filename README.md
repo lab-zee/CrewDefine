@@ -58,9 +58,18 @@ Or load a crew you authored here:
 ./scripts/load-crew.sh --restart ../CrewDefine/crews/dinner-planning-crew
 ```
 
-Shipped examples in this repo: `crews/business-coaching-crew`, `crews/dinner-planning-crew`.
+Shipped reference configurations:
 
-Browse the public crew catalog on the Lab Z site (`/crews`). The nebula → solar-system piece there is an illustration of the idea, not a live map of each crew.
+- `crews/technical-due-diligence` — architecture, security, dependency, reliability, and evidence review
+- `crews/research-evidence-synthesis` — protocol-driven source review, methods appraisal, contradiction analysis, and citation audit
+- `crews/incident-analysis` — sourced timeline, competing causal hypotheses, response analysis, and corrective-action verification
+- `crews/business-coaching-crew` — measured domain example used by the public case study
+- `crews/dinner-planning-crew` — minimal package used for onboarding and schema inspection
+
+Browse reference configurations, agent roles, tool interfaces, and loading instructions in the
+Lab Z crew catalog (`/crews`).
+
+Generation and validation record: [`docs/reference-crew-generation.md`](docs/reference-crew-generation.md).
 
 `crew.yaml` drives Zero's answer-mode selector (`GET /api/crew`). Contract: see Zero's `docs/CREW_HANDOFF.md`.
 

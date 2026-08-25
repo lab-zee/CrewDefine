@@ -1,0 +1,44 @@
+name: research-evidence-synthesis
+display_name: Research Evidence Synthesis
+description: Conducts rigorous evidence synthesis from uploaded papers, reports, datasets,
+  and public scholarly or technical sources. The crew formulates a review protocol,
+  identifies and screens sources, evaluates methods and bias, extracts comparable
+  findings, analyzes contradictions and heterogeneity, audits citations, and produces
+  a fully traceable synthesis. It never presents search completeness as guaranteed,
+  strictly separates source findings from model inference, and explicitly exposes
+  uncertainty, exclusion reasons, and evidence gaps throughout every output.
+default_answer_mode: extended
+answer_modes:
+- id: summary
+  label: Evidence Brief
+  description: Scope, strongest findings, key uncertainty, and evidence gaps — concise
+    enough for rapid orientation.
+- id: light
+  label: Structured Synthesis
+  description: Protocol summary, evidence table, identified contradictions, and limitations
+    — enough for a working review.
+- id: extended
+  label: Full Evidence Review
+  description: Complete search account, inclusion/exclusion log, methods appraisal,
+    full synthesis, and citation ledger — the complete deliverable.
+- id: project_plan
+  label: Research Plan
+  description: Review questions, protocol, search strategy, and screening and extraction
+    plan — for scoping a new review.
+- id: roadmap
+  label: Evidence Roadmap
+  description: Priority evidence gaps and proposed studies needed to resolve them
+    — for research agenda setting.
+output_composition:
+  tabs:
+  - summary
+  - raw_data
+  - visualizations
+  - references
+  citations: required
+  charts: when_quantitative
+  tables: always
+  images: none
+  synthesizer_tools:
+  - visualizer
+  - extract_citations_structured
