@@ -10,7 +10,6 @@ import re
 from typing import Any
 from urllib.parse import urlparse
 
-
 TOOL_DEFINITION: dict[str, Any] = {
     "type": "function",
     "function": {
@@ -45,7 +44,7 @@ def _try_fetch_text(url: str, limit: int = 4000) -> str | None:
             url,
             headers={"User-Agent": "LabZ-competitor-snapshot/1.0"},
         )
-        with urllib.request.urlopen(req, timeout=8) as resp:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=8) as resp:
             raw = resp.read(limit * 2)
         text = raw.decode("utf-8", errors="ignore")
         # Crude tag strip
@@ -54,7 +53,7 @@ def _try_fetch_text(url: str, limit: int = 4000) -> str | None:
         text = re.sub(r"<[^>]+>", " ", text)
         text = re.sub(r"\s+", " ", text).strip()
         return text[:limit] if text else None
-    except Exception as exc:  # noqa: BLE001 — tool should never crash the agent
+    except Exception as exc:
         return f"[fetch_failed: {type(exc).__name__}: {exc}]"
 
 
@@ -78,7 +77,9 @@ def competitor_snapshot(competitor: str) -> dict[str, Any]:
         "positioning": {
             "one_liner": None,
             "category": None,
-            "notes_from_page": page_excerpt[:500] if isinstance(page_excerpt, str) and not page_excerpt.startswith("[fetch_failed") else None,
+            "notes_from_page": page_excerpt[:500]
+            if isinstance(page_excerpt, str) and not page_excerpt.startswith("[fetch_failed")
+            else None,
         },
         "pricing_signals": {
             "public_pricing": None,

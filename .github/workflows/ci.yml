@@ -7,7 +7,39 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package with dev extras
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Lint
+        run: >-
+          ruff check src tests scripts
+          crews/business-coaching-crew/tools
+          crews/technical-due-diligence/tools
+          crews/research-evidence-synthesis/tools
+          crews/incident-analysis/tools
+      - name: Format check
+        run: >-
+          ruff format --check src tests scripts
+          crews/business-coaching-crew/tools
+          crews/technical-due-diligence/tools
+          crews/research-evidence-synthesis/tools
+          crews/incident-analysis/tools
+      - name: Strict type check
+        run: mypy src/crewdefine
+      - name: Tests, crew validation, and coverage
+        run: pytest
+
+  compatibility:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -23,12 +55,22 @@ jobs:
       - name: Install package with dev extras
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-      - name: Lint (ruff)
-        run: ruff check src tests
-      - name: Format check (ruff)
-        run: ruff format --check src tests
-      - name: Type check (mypy)
-        run: mypy src/crewdefine
-      - name: Test (pytest)
-        run: pytest --cov=crewdefine --cov-report=term-missing
+          python -m pip install -e ".[dev]"
+      - name: Test on Python ${{ matrix.python-version }}
+        run: pytest --no-cov
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+      - name: Build wheel and source distribution
+        run: python -m build

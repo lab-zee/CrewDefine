@@ -16,13 +16,24 @@ cp .env.example .env   # add your ANTHROPIC_API_KEY
 ## Running checks
 
 ```bash
-ruff check src tests
-ruff format --check src tests
+ruff check src tests scripts \
+  crews/business-coaching-crew/tools \
+  crews/technical-due-diligence/tools \
+  crews/research-evidence-synthesis/tools \
+  crews/incident-analysis/tools
+ruff format --check src tests scripts \
+  crews/business-coaching-crew/tools \
+  crews/technical-due-diligence/tools \
+  crews/research-evidence-synthesis/tools \
+  crews/incident-analysis/tools
 mypy src/crewdefine
 pytest
+python -m build
 ```
 
-CI runs these on Python 3.10, 3.11, and 3.12. Match them locally before opening a PR.
+`pytest` validates all five maintained crews and enforces at least 85% package coverage. CI runs
+the test suite on Python 3.10, 3.11, and 3.12; lint, format, strict mypy, coverage, and package
+build checks run on Python 3.12. Match these commands locally before opening a PR.
 
 ## Before you open a PR
 
